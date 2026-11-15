@@ -1,0 +1,264 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>SQL Playground</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#fff;--fg:#1d2330;--mut:#6b7385;--line:#e3e6ee;--panel:#f6f7fa;--acc:#3b5bdb;--err:#c92a2a;--null:#a0a6b5;--cm:#2f9e44;--kw:#5f3dc4;--st:#d9480f;--nu:#0b7285;--fn:#9c6b00;--card:#fff;--cardline:#d9dde8;--edge:#9aa3b8;--dot:#d9dce6}
+@media(prefers-color-scheme:dark){:root{--bg:#14171f;--fg:#e6e9f2;--mut:#98a0b3;--line:#2a2f3d;--panel:#1b1f2a;--acc:#7c95ff;--err:#ff8787;--null:#6b7385;--cm:#6a9955;--kw:#c586c0;--st:#ce9178;--nu:#4ec9b0;--fn:#dcdcaa;--card:#1d2230;--cardline:#323a4d;--edge:#6b7690;--dot:#262b39}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif;height:100vh;display:flex}
+[hidden]{display:none!important}
+aside{width:260px;min-width:160px;background:var(--panel);overflow:auto;padding:12px;flex:none}
+#vsplit{width:9px;margin:0 -4px;position:relative;z-index:5;cursor:col-resize;flex:none}#vsplit::after{content:"";position:absolute;top:0;bottom:0;left:4px;width:1px;background:var(--line)}#vsplit:hover::after,#vsplit.on::after{background:var(--acc);width:3px;left:3px}
+.dsbox{display:flex;gap:6px}#ds{flex:1;min-width:0}.rename{flex:1;min-width:0;font:inherit;padding:6px 10px;border:1px solid var(--acc);border-radius:6px;background:var(--bg);color:var(--fg);outline:none}
+.ico{padding:6px 9px}h4{cursor:pointer}h4:hover{color:var(--acc)}
+.tabs{display:flex;align-items:center;gap:4px;padding:6px 12px;border-bottom:1px solid var(--line);flex:none}
+.tab{border:0;background:transparent;padding:6px 14px;border-radius:7px;color:var(--mut);font-weight:600}.tab:hover{color:var(--fg)}.tab.on{background:var(--panel);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
+#qv{flex:1;min-height:0;display:flex;flex-direction:column}
+#erv{flex:1;min-height:0;position:relative;overflow:hidden}
+main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+select,button{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+button.run{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}button{cursor:pointer}
+h4{margin:14px 0 4px;font-size:13px}h4 small{color:var(--mut);font-weight:400}
+.col{font:12px ui-monospace,Menlo,monospace;color:var(--mut);padding:1px 0 1px 8px;cursor:pointer}.col b{color:var(--fg);font-weight:500}.col:hover b{color:var(--acc)}
+.bar{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}.bar .sp{flex:1}.hint{color:var(--mut);font-size:12px}
+.ed{position:relative;height:210px;overflow:hidden;min-height:60px;flex:none}
+#split{height:9px;margin:-4px 0;position:relative;z-index:2;cursor:row-resize;flex:none}#split::after{content:"";position:absolute;left:0;right:0;top:4px;height:1px;background:var(--line)}#split:hover::after,#split.on::after{background:var(--acc);height:3px;top:3px}
+#hl,#sql{position:absolute;inset:0;margin:0;padding:12px;border:0;font:13px/1.5 ui-monospace,Menlo,monospace;tab-size:2;white-space:pre;overflow:auto;letter-spacing:0;word-spacing:0}
+#hl{pointer-events:none;color:var(--fg);scrollbar-width:none}#hl::-webkit-scrollbar{display:none}
+#sql{background:transparent;color:transparent;caret-color:var(--fg);resize:none;outline:none;width:100%;height:100%}
+#sql::selection{background:rgba(124,149,255,.35)}
+.c{color:var(--cm);font-style:italic}.k{color:var(--kw);font-weight:600}.s{color:var(--st)}.n{color:var(--nu)}.f{color:var(--fn)}
+#tr{padding:6px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mut)}#tr pre{margin:6px 0 2px;color:var(--fg);font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap}#out{flex:1;min-height:0;overflow:auto}#meta,#tr{flex:none}#meta{padding:8px 12px;color:var(--mut);font-size:12px;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;font:12.5px ui-monospace,Menlo,monospace}th,td{padding:4px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:left;white-space:pre}
+th{position:sticky;top:0;background:var(--panel)}td.n{color:var(--null);font-style:italic}td.num{text-align:right}
+.err{color:var(--err);padding:12px;font:13px ui-monospace,Menlo,monospace;white-space:pre-wrap}
+
+#er{display:block;width:100%;height:100%;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}#er.pan{cursor:grabbing}
+.dot{fill:var(--dot)}
+.card{cursor:pointer;transition:opacity .15s}.card .card-bg{fill:var(--card);stroke:var(--cardline);stroke-width:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.10)) drop-shadow(0 8px 18px rgba(0,0,0,.07))}
+.card.on .card-bg{stroke:var(--tc);stroke-width:2}
+.head{fill:color-mix(in srgb,var(--tc) 16%,var(--card))}.sep{stroke:var(--cardline)}
+.tname{font:650 14px system-ui,sans-serif;fill:var(--fg)}.tmeta{font:11px system-ui,sans-serif;fill:var(--mut);text-anchor:end}
+.rowhit{fill:transparent}.row:hover .rowhit{fill:color-mix(in srgb,var(--tc) 9%,transparent)}.row.rl .rowhit{fill:color-mix(in srgb,var(--tc) 24%,transparent)}
+.cname{font:12.5px system-ui,sans-serif;fill:var(--fg)}.ctype{font:11px ui-monospace,Menlo,monospace;fill:var(--mut);text-anchor:end}.more{font:italic 11.5px system-ui,sans-serif;fill:var(--mut)}
+.bpk{fill:var(--tc)}.bfk{fill:none;stroke:var(--tc);stroke-width:1.2}.btxt{font:700 8.5px system-ui,sans-serif;fill:#fff;text-anchor:middle}.btxt.fk{fill:var(--tc)}
+.edge-line,.edge-glyph{fill:none;stroke:var(--edge);stroke-width:1.6;stroke-linecap:round;transition:stroke .15s,opacity .15s}.ring{fill:var(--bg);stroke:var(--edge);stroke-width:1.6}
+.edge.inferred .edge-line{stroke-dasharray:5 4}.edge-hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}
+.edge.hl .edge-line,.edge.hl .edge-glyph,.edge.hl .ring{stroke:var(--acc);stroke-width:2.4}
+.dim{opacity:.2}
+.fl{position:absolute;background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 28px rgba(0,0,0,.14)}
+#tb{bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:2px;padding:5px;align-items:center}
+#tb button{border:0;background:transparent;padding:6px 10px;border-radius:8px;font-size:13px}#tb button:hover{background:var(--panel)}#tb button.on{background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc)}
+#tb .tsep{width:1px;height:20px;background:var(--line);margin:0 4px}#zl{min-width:48px;text-align:center;font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+#chip{top:14px;left:14px;padding:9px 13px;font-size:12.5px;color:var(--mut)}#chip b{color:var(--fg);font-size:13.5px}#chip i{font-style:normal;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);border-radius:5px;padding:1px 6px;margin-left:6px;font-size:11px}
+#insp{top:14px;right:14px;width:280px;padding:14px;max-height:calc(100% - 110px);overflow:auto;font-size:13px}
+#insp h3{margin:0 0 2px;font-size:15px;display:flex;align-items:center;gap:8px}#insp h3 s{width:10px;height:10px;border-radius:50%;background:var(--tc);display:inline-block}
+#insp .m{color:var(--mut);font-size:12px;margin-bottom:10px}#insp h5{margin:12px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+#insp .rel{padding:6px 8px;margin:0 -8px;border-radius:7px;cursor:pointer;line-height:1.35}#insp .rel:hover{background:var(--panel)}#insp .rel small{display:block;color:var(--mut);font-size:11.5px}
+#insp .act{display:flex;gap:6px;margin-top:12px}#insp .act button{flex:1}
+#legend{bottom:18px;right:14px;padding:9px 12px;font-size:11.5px;color:var(--mut);line-height:1.9}#legend svg{vertical-align:middle;margin-right:6px;stroke:var(--edge);fill:none;stroke-width:1.6;stroke-linecap:round}
+#hint{bottom:18px;left:14px;padding:9px 12px;font-size:11.5px;color:var(--mut);line-height:1.6;max-width:210px}
+#tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12px;padding:5px 9px;border-radius:7px;white-space:nowrap;z-index:10}
+</style></head><body>
+<aside id="side"><div class="dsbox" id="dsbox"><select id="ds"></select><button class="ico" id="ren" title="Rename this data model">✎</button></div><div id="schema"></div></aside>
+<div id="vsplit" title="Drag to resize · double-click to reset"></div>
+<main>
+<div class="tabs"><button class="tab on" data-v="q">Query</button><button class="tab" data-v="m">Data model</button></div>
+<section id="qv">
+<div class="bar"><button class="run" id="run">Run ▶</button><span class="hint">⌘/Ctrl+Enter run · ⌘/Ctrl+/ comment · selection runs alone</span><select id="dia" title="Snowflake mode translates your SQL to Postgres before running it"><option value="postgres">PostgreSQL</option><option value="snowflake">Snowflake (translated)</option></select><span class="sp"></span>
+<button id="reset" title="Reload this dataset from its .sql file (undo any INSERT/UPDATE/DELETE)">Reset data</button></div>
+<div class="ed"><pre id="hl"></pre><textarea id="sql" spellcheck="false" wrap="off">SELECT * FROM customers LIMIT 10;</textarea></div><div id="split" title="Drag to resize"></div>
+<div id="meta"></div><details id="tr" hidden><summary>Executed as PostgreSQL</summary><pre id="trsql"></pre></details><div id="out"></div>
+</section>
+<section id="erv" hidden>
+<svg id="er" class="er"><defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" class="dot"/></pattern></defs><rect id="bg" width="100%" height="100%" fill="url(#dots)"/><g id="vp"></g></svg>
+<div class="fl" id="chip"></div>
+<div class="fl" id="insp" hidden></div>
+<div class="fl" id="hint">Drag cards to arrange · scroll to pan · ⌘/Ctrl+scroll or pinch to zoom · double-click a table to query it</div>
+<div class="fl" id="tb"><button id="zo" title="Zoom out (−)">−</button><span id="zl">100%</span><button id="zi" title="Zoom in (+)">+</button><span class="tsep"></span><button id="fit" title="Fit to screen (F)">Fit</button><button id="auto" title="Reset the layout">Auto-layout</button><span class="tsep"></span><button id="cmp" title="Show only key columns">Keys only</button></div>
+<div class="fl" id="legend"><div><svg width="30" height="14"><path d="M2 7H28M20 1v12M25 1v12"/></svg>exactly one</div><div><svg width="30" height="14"><path d="M2 7H28M2 1L14 7L2 13"/></svg>many</div><div><svg width="30" height="14"><path d="M2 7H28"/><circle cx="20" cy="7" r="4" style="fill:var(--bg)"/></svg>optional (nullable)</div><div><svg width="30" height="14"><path d="M2 7H28" stroke-dasharray="5 4"/></svg>inferred (no FK declared)</div></div>
+<div id="tip" hidden></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);let DATA={};
+async function post(u,b){return (await fetch(u,{method:"POST",body:JSON.stringify(b)})).json()}
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+let first=true;
+async function init(){DATA=await (await fetch("/api/datasets")).json();let keep=$("ds").value;if(first){keep=ls.get("ds")||keep;}
+ $("ds").innerHTML=Object.entries(DATA).map(([n,d])=>`<option value="${esc(n)}">${esc(d.label)}</option>`).join("");if(keep&&DATA[keep])$("ds").value=keep;draw();
+ if(first){first=false;const s=ls.get("sql");if(s)$("sql").value=s;hl()}}
+const dsTables=()=>(DATA[$("ds").value]||{tables:[]}).tables;
+function draw(){$("schema").innerHTML=dsTables().map(t=>`<h4 data-t="${esc(t.table)}" title="Click to insert table name">${esc(t.table)} <small>${t.rows} rows</small></h4>`+t.columns.map(c=>`<div class="col" data-c="${esc(c.name)}"><b>${esc(c.name)}</b> ${esc(c.type)}${c.pk?" 🔑":""}</div>`).join("")).join("");
+ if(!$("erv").hidden)buildER()}
+$("ds").onchange=()=>{ls.set("ds",$("ds").value);draw()};
+try{$("dia").value=ls.get("dia")||"postgres"}catch(e){}$("dia").onchange=()=>ls.set("dia",$("dia").value);
+function insertAtCursor(txt){const t=$("sql");t.setRangeText(txt,t.selectionStart,t.selectionEnd,"end");t.focus();hl()}
+$("schema").onclick=e=>{const c=e.target.closest(".col"),t=e.target.closest("h4");if(c)insertAtCursor(c.dataset.c);else if(t)insertAtCursor(t.dataset.t)};
+// rename the current data model (display name only)
+$("ren").onclick=()=>{const ds=$("ds").value,cur=DATA[ds].label,inp=document.createElement("input");inp.className="rename";inp.value=cur;inp.maxLength=60;
+ $("ds").hidden=$("ren").hidden=true;$("dsbox").prepend(inp);inp.focus();inp.select();let done=false;
+ const end=async save=>{if(done)return;done=true;const v=inp.value.trim();inp.remove();$("ds").hidden=$("ren").hidden=false;
+  if(save&&v&&v!==cur){await post("/api/rename",{dataset:ds,label:v});await init()}};
+ inp.onkeydown=e=>{if(e.key=="Enter")end(true);if(e.key=="Escape")end(false)};inp.onblur=()=>end(true)};
+// resizable sidebar
+(()=>{const side=$("side"),sp=$("vsplit");const w=ls.get("sbw");if(w)side.style.width=w+"px";
+ sp.onpointerdown=e=>{e.preventDefault();sp.setPointerCapture(e.pointerId);sp.classList.add("on");const x0=e.clientX,w0=side.offsetWidth;
+  const mv=ev=>{side.style.width=Math.max(160,Math.min(window.innerWidth-320,w0+ev.clientX-x0))+"px"};
+  const up=()=>{sp.classList.remove("on");sp.removeEventListener("pointermove",mv);sp.removeEventListener("pointerup",up);ls.set("sbw",side.offsetWidth)};
+  sp.addEventListener("pointermove",mv);sp.addEventListener("pointerup",up)};
+ sp.ondblclick=()=>{side.style.width="260px";ls.del("sbw")}})();
+// tabs
+function showTab(v){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.v==v));$("qv").hidden=v!="q";$("erv").hidden=v!="m";ls.set("tab",v);if(v=="m")buildER();else $("sql").focus()}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>showTab(b.dataset.v));
+async function run(){const t=$("sql");let sql=t.value.substring(t.selectionStart,t.selectionEnd).trim()||t.value;
+ try{localStorage.setItem("sql",t.value)}catch(e){}
+ const r=await post("/api/query",{dataset:$("ds").value,sql,dialect:$("dia").value});
+ $("tr").hidden=!r.translated;if(r.translated)$("trsql").textContent=r.translated;
+ if(r.error){$("meta").textContent="Error";$("out").innerHTML=`<div class="err"></div>`;$("out").firstChild.textContent=r.error;return}
+ $("meta").textContent=r.columns.length?`${r.rows.length} row(s)${r.truncated?" (truncated at 1000)":""} · ${r.ms} ms`:`${r.command} · ${r.ms} ms`;
+ const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+ $("out").innerHTML=r.columns.length?`<table><tr>${r.columns.map(c=>`<th>${esc(c)}</th>`).join("")}</tr>${r.rows.map(row=>"<tr>"+row.map((v,i)=>v===null?'<td class="n">NULL</td>':`<td class="${r.numeric[i]?"num":""}">${esc(v)}</td>`).join("")+"</tr>").join("")}</table>`:"";
+ if(!r.columns.length)init()}
+function toggle(t){const v=t.value;let a=v.lastIndexOf("\n",t.selectionStart-1)+1;let b=v.indexOf("\n",t.selectionEnd);if(b<0)b=v.length;
+ const lines=v.slice(a,b).split("\n");const all=lines.every(l=>!l.trim()||/^\s*--/.test(l));
+ const n=lines.map(l=>all?l.replace(/^(\s*)-- ?/,"$1"):l.trim()?"-- "+l:l).join("\n");t.setRangeText(n,a,b,"select");hl()}
+const KW=new Set("select from where group by order having limit offset join left right inner outer full cross on using as and or not in is null like glob between exists case when then else end distinct union all intersect except with recursive over partition rows range unbounded preceding following current row asc desc insert into values update set delete create table drop alter index view if primary key default cast collate escape nulls first last true false qualify iff flatten variant try_cast filter ilike returning lateral interval date timestamp timestamptz numeric text integer boolean within window extract current_date now".split(" "));
+function hl(){const v=$("sql").value,esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+ $("hl").innerHTML=v.replace(/(--[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|('(?:[^']|'')*'?)|("(?:[^"]|"")*"?)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)(\s*\()?|([\s\S])/g,(m,c,s,d,n,w,p,o)=>
+  c?`<span class="c">${esc(c)}</span>`:s?`<span class="s">${esc(s)}</span>`:d?`<span class="f">${esc(d)}</span>`:n?`<span class="n">${n}</span>`:
+  w?(KW.has(w.toLowerCase())?`<span class="k">${w}</span>`+(p||""):p?`<span class="f">${w}</span>`+p:m):esc(m))+"\n ";
+ $("hl").scrollTop=$("sql").scrollTop;$("hl").scrollLeft=$("sql").scrollLeft}
+$("sql").addEventListener("input",hl);$("sql").addEventListener("scroll",()=>{$("hl").scrollTop=$("sql").scrollTop;$("hl").scrollLeft=$("sql").scrollLeft});
+(()=>{const ed=document.querySelector(".ed"),sp=$("split");
+ try{const v=localStorage.getItem("edh");if(v)ed.style.height=v+"px"}catch(e){}
+ sp.onpointerdown=e=>{e.preventDefault();sp.setPointerCapture(e.pointerId);sp.classList.add("on");const y0=e.clientY,h0=ed.offsetHeight;
+  const mv=ev=>{const max=document.querySelector("main").clientHeight-120;ed.style.height=Math.max(60,Math.min(max,h0+ev.clientY-y0))+"px"};
+  const up=()=>{sp.classList.remove("on");sp.removeEventListener("pointermove",mv);sp.removeEventListener("pointerup",up);try{localStorage.setItem("edh",ed.offsetHeight)}catch(e){}};
+  sp.addEventListener("pointermove",mv);sp.addEventListener("pointerup",up)};
+ sp.ondblclick=()=>{ed.style.height="210px";try{localStorage.removeItem("edh")}catch(e){}}})();
+$("run").onclick=run;
+$("sql").onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key=="Enter"){e.preventDefault();run()}
+ if((e.metaKey||e.ctrlKey)&&e.key=="/"){e.preventDefault();toggle(e.target)}
+ if(e.key=="Tab"){e.preventDefault();e.target.setRangeText("  ",e.target.selectionStart,e.target.selectionEnd,"end");hl()}};
+$("reset").onclick=async()=>{await post("/api/reset",{dataset:$("ds").value});await init();$("meta").textContent="Data reset";$("out").innerHTML=""};
+/* ================= ER diagram ================= */
+const SVGNS="http://www.w3.org/2000/svg",PAL=["#4c6ef5","#12b886","#f59f00","#e64980","#7950f2","#15aabf","#fd7e14","#40c057"],CW=250,HEAD=42,ROWH=26;
+const S=(tag,at={},par)=>{const e=document.createElementNS(SVGNS,tag);for(const k in at)e.setAttribute(k,at[k]);if(par)par.appendChild(e);return e};
+const er={ds:null,nodes:new Map(),edges:[],view:{x:0,y:0,k:1},sel:null,hoverT:null,hoverE:null,hoverRow:null,compact:ls.get("ercmp")=="1",fitted:false,pos:{}};
+const shortType=t=>({"integer":"int","character varying":"varchar","timestamp with time zone":"timestamptz","timestamp without time zone":"timestamp","double precision":"float8","boolean":"bool"}[t]||t);
+const quoteId=n=>/^[a-z_][a-z0-9_]*$/.test(n)?n:'"'+n.replace(/"/g,'""')+'"';
+const loadPos=ds=>{try{return JSON.parse(ls.get("erpos:"+ds)||"{}")}catch(e){return {}}};
+const savePos=()=>{const o={};er.nodes.forEach((n,k)=>o[k]=[Math.round(n.x),Math.round(n.y)]);er.pos=o;ls.set("erpos:"+er.ds,JSON.stringify(o))};
+
+function visibleCols(t,fk){if(!er.compact)return t.columns;const v=t.columns.filter(c=>c.pk||fk.has(c.name));return v.length?v:t.columns.slice(0,1)}
+const cardH=(t,fk)=>HEAD+visibleCols(t,fk).length*ROWH+10+(er.compact&&visibleCols(t,fk).length<t.columns.length?ROWH:0);
+function autoLayout(d,size){ // hub (most connected table) in the middle, the others fan out left/right in columns
+ const deg={};d.tables.forEach(t=>deg[t.table]=0);d.relations.forEach(r=>{deg[r.from.table]++;deg[r.to.table]++});
+ const order=[...d.tables].sort((a,b)=>deg[b.table]-deg[a.table]||a.table.localeCompare(b.table)),pos={};if(!order.length)return pos;
+ pos[order[0].table]=[-CW/2,-size[order[0].table]/2];const groups={};
+ order.slice(1).forEach((t,i)=>{const side=i%2?-1:1,col=Math.floor(Math.floor(i/2)/3)+1;(groups[side*col]??=[]).push(t)});
+ for(const key in groups){const g=groups[key],gap=36,total=g.reduce((s,t)=>s+size[t.table],0)+gap*(g.length-1),k=+key;let y=-total/2;
+  const x=k>0?CW/2+120+(k-1)*(CW+120):-CW/2-120-CW-(-k-1)*(CW+120);g.forEach(t=>{pos[t.table]=[x,y];y+=size[t.table]+gap})}
+ return pos}
+
+function buildER(){const d=DATA[$("ds").value];if(!d)return;const ds=$("ds").value,svg=$("er");
+ if(er.ds!==ds){er.ds=ds;er.sel=null;er.fitted=false;er.pos=loadPos(ds)}
+ const vp=$("vp");vp.innerHTML="";er.nodes.clear();er.edges=[];
+ const fkOf={};d.tables.forEach(t=>fkOf[t.table]=new Set());d.relations.forEach(r=>fkOf[r.from.table].add(r.from.column));
+ const size={};d.tables.forEach(t=>size[t.table]=cardH(t,fkOf[t.table]));
+ const auto=autoLayout(d,size),eg=S("g",{},vp),cg=S("g",{},vp);
+ d.tables.forEach((t,i)=>{const p=er.pos[t.table]||auto[t.table]||[0,0],cols=visibleCols(t,fkOf[t.table]);
+  const n={t,x:p[0],y:p[1],w:CW,h:size[t.table],color:PAL[i%PAL.length],rows:{},idx:{},auto:auto[t.table]};
+  const g=n.g=S("g",{class:"card","data-t":t.table,style:`--tc:${n.color}`},cg);g.setAttribute("transform",`translate(${n.x} ${n.y})`);
+  S("rect",{class:"card-bg",width:CW,height:n.h,rx:10},g);S("rect",{class:"head",width:CW,height:HEAD,rx:10},g);S("rect",{class:"head",y:HEAD-10,width:CW,height:10},g);
+  S("line",{class:"sep",x1:0,x2:CW,y1:HEAD,y2:HEAD},g);
+  S("text",{class:"tname",x:14,y:26},g).textContent=t.table;S("text",{class:"tmeta",x:CW-14,y:26},g).textContent=t.rows+" rows";
+  cols.forEach((c,j)=>{const rg=S("g",{class:"row","data-c":c.name},g);n.rows[c.name]=rg;n.idx[c.name]=j;const y=HEAD+j*ROWH;
+   S("rect",{class:"rowhit",x:1,y,width:CW-2,height:ROWH},rg);let bx=14;const isFk=fkOf[t.table].has(c.name);
+   if(c.pk){S("rect",{class:"bpk",x:bx,y:y+6,width:22,height:14,rx:4},rg);S("text",{class:"btxt",x:bx+11,y:y+16},rg).textContent="PK";bx+=26}
+   if(isFk){S("rect",{class:"bfk",x:bx+.5,y:y+6.5,width:21,height:13,rx:4},rg);S("text",{class:"btxt fk",x:bx+11,y:y+16},rg).textContent="FK";bx+=26}
+   S("text",{class:"cname",x:bx,y:y+17.5},rg).textContent=c.name;S("text",{class:"ctype",x:CW-14,y:y+17.5},rg).textContent=shortType(c.type)});
+  if(cols.length<t.columns.length)S("text",{class:"more",x:14,y:HEAD+cols.length*ROWH+17},g).textContent=`+ ${t.columns.length-cols.length} more columns`;
+  er.nodes.set(t.table,n)});
+ d.relations.forEach((r,i)=>{if(!er.nodes.has(r.from.table)||!er.nodes.has(r.to.table))return;
+  const g=S("g",{class:"edge"+(r.inferred?" inferred":""),"data-i":er.edges.length},eg);
+  er.edges.push({r,g,hit:S("path",{class:"edge-hit"},g),line:S("path",{class:"edge-line"},g),glyph:S("path",{class:"edge-glyph"},g),ring:S("circle",{class:"ring",r:4},g)})});
+ updateEdges();if(er.sel&&!er.nodes.has(er.sel))er.sel=null;
+ const inf=d.relations.filter(r=>r.inferred).length;
+ $("chip").innerHTML=`<b>${esc(d.label)}</b><br>${d.tables.length} tables · ${d.relations.length} relationships${inf?`<i title="This dataset declares no foreign keys, so relationships are inferred from matching column names">inferred</i>`:""}`;
+ $("cmp").classList.toggle("on",er.compact);applyFocus();renderInspector();
+ if(!er.fitted&&svg.clientWidth){er.fitted=true;fit(false)}else applyView()}
+
+function updateEdges(){er.edges.forEach(e=>{const {r}=e,c=er.nodes.get(r.from.table),p=er.nodes.get(r.to.table);
+  const y1=c.y+HEAD+(c.idx[r.from.column]??0)*ROWH+ROWH/2,y2=p.y+HEAD+(p.idx[r.to.column]??0)*ROWH+ROWH/2;let s1,s2,x1,x2;
+  if(c.x+CW<p.x-20){s1=1;s2=-1;x1=c.x+CW;x2=p.x}else if(p.x+CW<c.x-20){s1=-1;s2=1;x1=c.x;x2=p.x+CW}else{s1=s2=1;x1=c.x+CW;x2=p.x+CW}
+  const dx=s1==s2?70:Math.max(50,Math.abs(x2-x1)/2),d=`M${x1} ${y1}C${x1+s1*dx} ${y1} ${x2+s2*dx} ${y2} ${x2} ${y2}`;
+  e.line.setAttribute("d",d);e.hit.setAttribute("d",d);
+  let g=`M${x2} ${y2-7}V${y2+7}M${x2+s2*7} ${y2-7}V${y2+7}`;   // parent end: exactly one
+  const a=x1+s1*10,b=x1+s1*17,ring=r.nullable;
+  if(r.unique)g+=`M${x1+s1*7} ${y1-7}V${y1+7}`;               // child end, 1:1
+  else g+=`M${a+2*s1} ${y1}L${x1} ${y1-7}M${a+2*s1} ${y1}L${x1} ${y1+7}`+(ring?"":`M${b+s1*2} ${y1-7}V${y1+7}`); // child end, many
+  e.glyph.setAttribute("d",g);e.ring.style.display=ring?"":"none";if(ring){e.ring.setAttribute("cx",x1+s1*(r.unique?15:19));e.ring.setAttribute("cy",y1)}})}
+
+function edgeTip(r){const rel=r.unique?"one-to-one":"many-to-one";return `${r.from.table}.${r.from.column} → ${r.to.table}.${r.to.column} · ${rel}${r.inferred?" · inferred":""}`}
+function applyFocus(){const t=er.sel||er.hoverT;let set=null;
+ if(er.hoverE)set=[er.hoverE];
+ else if(er.hoverRow){const {t:tt,c}=er.hoverRow;set=er.edges.filter(e=>(e.r.from.table==tt&&e.r.from.column==c)||(e.r.to.table==tt&&e.r.to.column==c))}
+ else if(t)set=er.edges.filter(e=>e.r.from.table==t||e.r.to.table==t);
+ const related=new Set(t?[t]:[]);if(set)set.forEach(e=>{related.add(e.r.from.table);related.add(e.r.to.table)});
+ const focusing=!!(set||t);document.querySelectorAll("#er .row.rl").forEach(x=>x.classList.remove("rl"));
+ er.nodes.forEach((n,k)=>{n.g.classList.toggle("dim",focusing&&!related.has(k));n.g.classList.toggle("on",er.sel===k)});
+ er.edges.forEach(e=>{const on=!!set&&set.includes(e);e.g.classList.toggle("hl",on);e.g.classList.toggle("dim",focusing&&!on);
+  if(on){er.nodes.get(e.r.from.table).rows[e.r.from.column]?.classList.add("rl");er.nodes.get(e.r.to.table).rows[e.r.to.column]?.classList.add("rl")}})}
+
+function renderInspector(){const box=$("insp"),d=DATA[$("ds").value],n=er.sel&&er.nodes.get(er.sel);if(!n){box.hidden=true;return}
+ const t=n.t,out=d.relations.filter(r=>r.from.table==t.table),inc=d.relations.filter(r=>r.to.table==t.table);
+ const li=(tbl,main,sub)=>`<div class="rel" data-t="${esc(tbl)}"><b>${esc(tbl)}</b><small>${main}</small></div>`;
+ box.style.setProperty("--tc",n.color);
+ box.innerHTML=`<h3><s></s>${esc(t.table)}</h3><div class="m">${t.rows} rows · ${t.columns.length} columns · ${t.columns.filter(c=>c.pk).map(c=>"PK "+esc(c.name)).join(", ")||"no primary key"}</div>
+ ${out.length?`<h5>References</h5>`+out.map(r=>li(r.to.table,`${esc(r.from.column)} → ${esc(r.to.column)} · ${r.unique?"one-to-one":"many-to-one"}${r.nullable?" · optional":""}${r.inferred?" · inferred":""}`)).join(""):""}
+ ${inc.length?`<h5>Referenced by</h5>`+inc.map(r=>li(r.from.table,`${esc(r.from.column)} → ${esc(r.to.column)} · ${r.unique?"one-to-one":"one-to-many"}${r.inferred?" · inferred":""}`)).join(""):""}
+ ${!out.length&&!inc.length?`<div class="m">No relationships.</div>`:""}
+ <div class="act"><button class="run" id="qt">Query table</button><button id="ci">Close</button></div>`;
+ box.hidden=false;$("qt").onclick=()=>openTable(t.table);$("ci").onclick=()=>{er.sel=null;applyFocus();renderInspector()};
+ box.querySelectorAll(".rel").forEach(x=>x.onclick=()=>{er.sel=x.dataset.t;applyFocus();renderInspector()})}
+function openTable(t){$("sql").value=`SELECT *\nFROM ${quoteId(t)}\nLIMIT 100;`;hl();showTab("q");run()}
+
+// view (pan / zoom)
+function applyView(){const {x,y,k}=er.view;$("vp").setAttribute("transform",`translate(${x} ${y}) scale(${k})`);$("dots").setAttribute("patternTransform",`translate(${x} ${y}) scale(${k})`);$("zl").textContent=Math.round(k*100)+"%"}
+const ease=t=>1-Math.pow(1-t,3);
+function tween(ms,step){return new Promise(ok=>{const t0=performance.now();const f=now=>{const p=Math.min(1,(now-t0)/ms);step(ease(p));p<1?requestAnimationFrame(f):ok()};requestAnimationFrame(f)})}
+function zoomAt(px,py,f){const v=er.view,k=Math.max(.2,Math.min(2.5,v.k*f)),r=k/v.k;v.x=px-(px-v.x)*r;v.y=py-(py-v.y)*r;v.k=k;applyView()}
+function fit(animate=true){const svg=$("er"),W=svg.clientWidth,H=svg.clientHeight;if(!er.nodes.size||!W)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+ er.nodes.forEach(n=>{x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x+n.w);y1=Math.max(y1,n.y+n.h)});
+ const padX=90,padTop=90,padBot=110,k=Math.min((W-2*padX)/(x1-x0),(H-padTop-padBot)/(y1-y0),1.1),
+  to={k,x:(W-(x1-x0)*k)/2-x0*k,y:padTop+(H-padTop-padBot-(y1-y0)*k)/2-y0*k},from={...er.view};
+ if(!animate){er.view=to;applyView();return}
+ tween(280,t=>{er.view={k:from.k+(to.k-from.k)*t,x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t};applyView()})}
+function resetLayout(){const from=[...er.nodes.values()].map(n=>[n,n.x,n.y]);
+ tween(380,t=>{from.forEach(([n,x,y])=>{const [ax,ay]=n.auto;n.x=x+(ax-x)*t;n.y=y+(ay-y)*t;n.g.setAttribute("transform",`translate(${n.x} ${n.y})`)});updateEdges()}).then(()=>{er.pos={};ls.del("erpos:"+er.ds);fit(true)})}
+
+(()=>{const svg=$("er");let st=null;const tip=$("tip");
+ svg.addEventListener("pointerdown",e=>{if(e.button!==0)return;const c=e.target.closest(".card"),node=c&&er.nodes.get(c.dataset.t);
+  st={sx:e.clientX,sy:e.clientY,moved:false,node,vx:er.view.x,vy:er.view.y,nx:node&&node.x,ny:node&&node.y};svg.setPointerCapture(e.pointerId);tip.hidden=true});
+ svg.addEventListener("pointermove",e=>{if(!st)return;const dx=e.clientX-st.sx,dy=e.clientY-st.sy;if(!st.moved&&Math.hypot(dx,dy)>3){st.moved=true;if(st.node)st.node.g.parentNode.appendChild(st.node.g);else svg.classList.add("pan")}
+  if(!st.moved)return;if(st.node){const n=st.node;n.x=st.nx+dx/er.view.k;n.y=st.ny+dy/er.view.k;n.g.setAttribute("transform",`translate(${n.x} ${n.y})`);updateEdges()}else{er.view.x=st.vx+dx;er.view.y=st.vy+dy;applyView()}});
+ const end=()=>{if(!st)return;svg.classList.remove("pan");if(!st.moved){if(st.node)er.sel=er.sel==st.node.t.table?null:st.node.t.table;else er.sel=null;applyFocus();renderInspector()}else if(st.node)savePos();st=null};
+ svg.addEventListener("pointerup",end);svg.addEventListener("pointercancel",end);
+ svg.addEventListener("mouseover",e=>{if(st)return;const c=e.target.closest(".card"),r=c&&e.target.closest(".row"),ed=e.target.closest(".edge");
+  er.hoverT=c?c.dataset.t:null;er.hoverRow=r?{t:c.dataset.t,c:r.dataset.c}:null;er.hoverE=ed?er.edges[+ed.dataset.i]:null;applyFocus();
+  if(er.hoverE){tip.textContent=edgeTip(er.hoverE.r);tip.hidden=false}else tip.hidden=true});
+ svg.addEventListener("mousemove",e=>{if(tip.hidden)return;const b=$("erv").getBoundingClientRect();tip.style.left=e.clientX-b.left+14+"px";tip.style.top=e.clientY-b.top+14+"px"});
+ svg.addEventListener("mouseleave",()=>{if(st)return;er.hoverT=er.hoverRow=er.hoverE=null;tip.hidden=true;applyFocus()});
+ svg.addEventListener("dblclick",e=>{const c=e.target.closest(".card");if(c)openTable(c.dataset.t)});
+ svg.addEventListener("wheel",e=>{e.preventDefault();const b=svg.getBoundingClientRect();
+  if(e.ctrlKey||e.metaKey)zoomAt(e.clientX-b.left,e.clientY-b.top,Math.exp(-e.deltaY*(e.ctrlKey?.01:.002)));else{er.view.x-=e.deltaX;er.view.y-=e.deltaY;applyView()}},{passive:false});
+ const mid=()=>[svg.clientWidth/2,svg.clientHeight/2];
+ $("zi").onclick=()=>zoomAt(...mid(),1.2);$("zo").onclick=()=>zoomAt(...mid(),1/1.2);$("fit").onclick=()=>fit(true);$("auto").onclick=resetLayout;
+ $("cmp").onclick=()=>{er.compact=!er.compact;ls.set("ercmp",er.compact?"1":"0");buildER()};
+ document.addEventListener("keydown",e=>{if($("erv").hidden||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||e.metaKey||e.ctrlKey)return;
+  if(e.key=="f")fit(true);else if(e.key=="+"||e.key=="=")zoomAt(...mid(),1.2);else if(e.key=="-")zoomAt(...mid(),1/1.2);else if(e.key=="Escape"){er.sel=null;applyFocus();renderInspector()}});
+ new ResizeObserver(()=>{if(!$("erv").hidden&&!er.fitted&&svg.clientWidth&&er.nodes.size){er.fitted=true;fit(false)}}).observe(svg)})();
+
+init().then(()=>{if(ls.get('tab')=='m')showTab('m')});
+</script></body></html>

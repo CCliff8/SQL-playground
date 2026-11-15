@@ -1,0 +1,5 @@
+node_modules/
+.venv/
+.DS_Store
+# local display names for datasets (see "Rename" in the UI)
+datasets/labels.json

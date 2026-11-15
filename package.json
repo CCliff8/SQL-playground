@@ -1,0 +1,12 @@
+{
+  "name": "sql-playground",
+  "version": "1.0.0",
+  "description": "Local PostgreSQL (and translated Snowflake) SQL playground with an ER diagram, for interview prep",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.16"
+  }
+}
