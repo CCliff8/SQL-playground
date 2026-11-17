@@ -59,6 +59,7 @@ Treat it as a learning aid, not proof a query runs unchanged on Snowflake.
 |---|---|
 | `datasets/saas.sql` | `customers`, `subscriptions`, `invoices`, `events` (~100 rows each) with deliberate real-world mess: duplicates, orphans, NULLs, casing and whitespace variants, negative and outlier amounts, ended-before-started subscriptions, future and epoch dates, tz offsets. No foreign keys, so the diagram shows inferred relationships. |
 | `datasets/saas_extended.sql` | Same domain, extended and **consistent**: `customers` (sector), `subscriptions`, `invoices` (type, status), `events` (JSONB `properties`), `hubspot_customers`. 60 customers, ~4.4k invoices, 7k events, enforced foreign keys, plan changes, churn and returning customers. Built for cohort retention, MRR movement and JSON exercises. |
+| `datasets/test_finale.sql` | Final practice set: `customers`, `subscriptions`, `invoices`, `events` (JSONB `properties`), consistent data with enforced foreign keys. Shaped for: issued invoices per size band in Q3 2026 (including empty bands), active customers that never issued an invoice (some have only draft/cancelled ones), monthly active customers (3+ distinct event days), WhatsApp share and `doc_type` breakdown from JSON, and cohort retention by first issued invoice. Design notes are in the header of `generators/test_finale.py`. |
 
 ## Adding your own dataset
 
@@ -67,6 +68,7 @@ Treat it as a learning aid, not proof a query runs unchanged on Snowflake.
    ```bash
    python3 generators/saas.py            # -> datasets/saas.sql
    python3 generators/saas_extended.py   # -> datasets/saas_extended.sql
+   python3 generators/test_finale.py     # -> datasets/test_finale.sql
    ```
    Generators are deterministic (fixed random seed).
 
