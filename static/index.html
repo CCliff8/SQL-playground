@@ -57,13 +57,21 @@ th{position:sticky;top:0;background:var(--panel)}td.n{color:var(--null);font-sty
 #legend{bottom:18px;right:14px;padding:9px 12px;font-size:11.5px;color:var(--mut);line-height:1.9}#legend svg{vertical-align:middle;margin-right:6px;stroke:var(--edge);fill:none;stroke-width:1.6;stroke-linecap:round}
 #hint{bottom:18px;left:14px;padding:9px 12px;font-size:11.5px;color:var(--mut);line-height:1.6;max-width:210px}
 #tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12px;padding:5px 9px;border-radius:7px;white-space:nowrap;z-index:10}
+.sheets{display:flex;align-items:flex-end;gap:2px;padding:6px 12px 0;border-bottom:1px solid var(--line);overflow-x:auto;flex:none;scrollbar-width:none}.sheets::-webkit-scrollbar{display:none}
+.sh{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px;border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;color:var(--mut);cursor:pointer;white-space:nowrap;font-size:13px;margin-bottom:-1px}
+.sh:hover{color:var(--fg);background:var(--panel)}.sh.on{background:var(--bg);color:var(--fg);border-color:var(--line);font-weight:600}
+.sh .x{border:0;background:transparent;padding:0 5px;border-radius:4px;color:var(--mut);font-size:15px;line-height:1.2;visibility:hidden}.sh:hover .x,.sh.on .x{visibility:visible}.sh .x:hover{background:var(--line);color:var(--fg)}
+.sh input{font:inherit;width:110px;padding:1px 4px;border:1px solid var(--acc);border-radius:4px;background:var(--bg);color:var(--fg);outline:none}
+#addsh{border:0;background:transparent;font-size:18px;line-height:1;padding:4px 10px;color:var(--mut);margin-bottom:3px;border-radius:6px}#addsh:hover{background:var(--panel);color:var(--fg)}
+.bar .dsbox{flex:none}.bar #ds{max-width:220px}.bar .rename{width:180px;flex:none}
 </style></head><body>
-<aside id="side"><div class="dsbox" id="dsbox"><select id="ds"></select><button class="ico" id="ren" title="Rename this data model">✎</button></div><div id="schema"></div></aside>
+<aside id="side"><div id="schema"></div></aside>
 <div id="vsplit" title="Drag to resize · double-click to reset"></div>
 <main>
 <div class="tabs"><button class="tab on" data-v="q">Query</button><button class="tab" data-v="m">Data model</button></div>
 <section id="qv">
-<div class="bar"><button class="run" id="run">Run ▶</button><span class="hint">⌘/Ctrl+Enter run · ⌘/Ctrl+/ comment · selection runs alone</span><select id="dia" title="Snowflake mode translates your SQL to Postgres before running it"><option value="postgres">PostgreSQL</option><option value="snowflake">Snowflake (translated)</option></select><span class="sp"></span>
+<div class="sheets" id="sheets"></div>
+<div class="bar"><button class="run" id="run" title="Run (⌘/Ctrl+Enter). Runs only the selection if there is one. ⌘/Ctrl+/ toggles comments.">Run ▶</button><div class="dsbox" id="dsbox"><select id="ds" title="Dataset used by this sheet"></select><button class="ico" id="ren" title="Rename this data model">✎</button></div><select id="dia" title="Snowflake mode translates your SQL to Postgres before running it"><option value="postgres">PostgreSQL</option><option value="snowflake">Snowflake (translated)</option></select><span class="sp"></span>
 <button id="reset" title="Reload this dataset from its .sql file (undo any INSERT/UPDATE/DELETE)">Reset data</button></div>
 <div class="ed"><pre id="hl"></pre><textarea id="sql" spellcheck="false" wrap="off">SELECT * FROM customers LIMIT 10;</textarea></div><div id="split" title="Drag to resize"></div>
 <div id="meta"></div><details id="tr" hidden><summary>Executed as PostgreSQL</summary><pre id="trsql"></pre></details><div id="out"></div>
@@ -84,14 +92,38 @@ async function post(u,b){return (await fetch(u,{method:"POST",body:JSON.stringif
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
 let first=true;
-async function init(){DATA=await (await fetch("/api/datasets")).json();let keep=$("ds").value;if(first){keep=ls.get("ds")||keep;}
- $("ds").innerHTML=Object.entries(DATA).map(([n,d])=>`<option value="${esc(n)}">${esc(d.label)}</option>`).join("");if(keep&&DATA[keep])$("ds").value=keep;draw();
- if(first){first=false;const s=ls.get("sql");if(s)$("sql").value=s;hl()}}
+/* ---- sheets: each has its own SQL, dataset, dialect and last result ---- */
+let SH={list:[],active:null,n:0};
+const cur=()=>SH.list.find(s=>s.id==SH.active);
+const saveSheets=()=>ls.set("sheets",JSON.stringify({list:SH.list.map(({last,...s})=>s),active:SH.active,n:SH.n}));
+const syncSql=()=>{const s=cur();if(s){s.sql=$("sql").value;saveSheets()}};
+function loadSheets(){try{const o=JSON.parse(ls.get("sheets")||"null");if(o&&o.list&&o.list.length&&o.list.some(s=>s.id==o.active)){SH=o;return}}catch(e){}
+ SH={list:[{id:1,name:"Sheet 1",ds:ls.get("ds")||"",dia:ls.get("dia")||"postgres",sql:ls.get("sql")||$("sql").value}],active:1,n:1}}
+function applySheet(){const s=cur();if(!DATA[s.ds])s.ds=Object.keys(DATA)[0];$("ds").value=s.ds;$("dia").value=s.dia;$("sql").value=s.sql;hl();draw();showResult(s.last)}
+function switchSheet(id){if(id==SH.active)return;syncSql();SH.active=id;saveSheets();applySheet();renderSheets()}
+function addSheet(){syncSql();const c=cur();SH.n++;const s={id:SH.n,name:"Sheet "+SH.n,ds:c.ds,dia:c.dia,sql:""};SH.list.push(s);SH.active=s.id;saveSheets();applySheet();renderSheets();$("sql").focus()}
+function closeSheet(id){if(SH.list.length<2)return;const i=SH.list.findIndex(s=>s.id==id),s=SH.list[i];
+ if(s.sql.trim()&&!confirm(`Close "${s.name}"? Its query will be lost.`))return;
+ SH.list.splice(i,1);if(SH.active==id){SH.active=(SH.list[i]||SH.list[i-1]).id;applySheet()}saveSheets();renderSheets()}
+function renameSheet(id,span){const s=SH.list.find(x=>x.id==id),inp=document.createElement("input");inp.value=s.name;inp.maxLength=30;span.replaceWith(inp);inp.focus();inp.select();let done=false;
+ const end=save=>{if(done)return;done=true;if(save&&inp.value.trim())s.name=inp.value.trim();saveSheets();renderSheets()};
+ inp.onkeydown=e=>{e.stopPropagation();if(e.key=="Enter")end(true);if(e.key=="Escape")end(false)};inp.onblur=()=>end(true);inp.onclick=e=>e.stopPropagation()}
+function renderSheets(){const box=$("sheets");box.innerHTML="";
+ SH.list.forEach(s=>{const d=document.createElement("div");d.className="sh"+(s.id==SH.active?" on":"");d.title=`Double-click to rename · dataset: ${(DATA[s.ds]||{}).label||s.ds}`;
+  d.innerHTML=`<span class="nm">${esc(s.name)}</span>`;
+  d.onclick=()=>switchSheet(s.id);d.querySelector(".nm").ondblclick=e=>{e.stopPropagation();renameSheet(s.id,e.target)};
+  if(SH.list.length>1){const x=document.createElement("button");x.className="x";x.textContent="×";x.title="Close sheet";x.onclick=e=>{e.stopPropagation();closeSheet(s.id)};d.appendChild(x)}
+  box.appendChild(d)});
+ const add=document.createElement("button");add.id="addsh";add.textContent="+";add.title="New sheet";add.onclick=addSheet;box.appendChild(add)}
+async function init(){DATA=await (await fetch("/api/datasets")).json();
+ $("ds").innerHTML=Object.entries(DATA).map(([n,d])=>`<option value="${esc(n)}">${esc(d.label)}</option>`).join("");
+ if(first){first=false;loadSheets();applySheet()}else{const s=cur();if(DATA[s.ds])$("ds").value=s.ds;draw()}
+ renderSheets()}
 const dsTables=()=>(DATA[$("ds").value]||{tables:[]}).tables;
 function draw(){$("schema").innerHTML=dsTables().map(t=>`<h4 data-t="${esc(t.table)}" title="Click to insert table name">${esc(t.table)} <small>${t.rows} rows</small></h4>`+t.columns.map(c=>`<div class="col" data-c="${esc(c.name)}"><b>${esc(c.name)}</b> ${esc(c.type)}${c.pk?" 🔑":""}</div>`).join("")).join("");
  if(!$("erv").hidden)buildER()}
-$("ds").onchange=()=>{ls.set("ds",$("ds").value);draw()};
-try{$("dia").value=ls.get("dia")||"postgres"}catch(e){}$("dia").onchange=()=>ls.set("dia",$("dia").value);
+$("ds").onchange=()=>{const s=cur();s.ds=$("ds").value;s.last=null;showResult(null);saveSheets();renderSheets();draw()};
+$("dia").onchange=()=>{cur().dia=$("dia").value;saveSheets()};
 function insertAtCursor(txt){const t=$("sql");t.setRangeText(txt,t.selectionStart,t.selectionEnd,"end");t.focus();hl()}
 $("schema").onclick=e=>{const c=e.target.closest(".col"),t=e.target.closest("h4");if(c)insertAtCursor(c.dataset.c);else if(t)insertAtCursor(t.dataset.t)};
 // rename the current data model (display name only)
@@ -110,15 +142,15 @@ $("ren").onclick=()=>{const ds=$("ds").value,cur=DATA[ds].label,inp=document.cre
 // tabs
 function showTab(v){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.v==v));$("qv").hidden=v!="q";$("erv").hidden=v!="m";ls.set("tab",v);if(v=="m")buildER();else $("sql").focus()}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>showTab(b.dataset.v));
-async function run(){const t=$("sql");let sql=t.value.substring(t.selectionStart,t.selectionEnd).trim()||t.value;
- try{localStorage.setItem("sql",t.value)}catch(e){}
- const r=await post("/api/query",{dataset:$("ds").value,sql,dialect:$("dia").value});
+function showResult(r){
+ if(!r){$("tr").hidden=true;$("meta").textContent="";$("out").innerHTML="";return}
  $("tr").hidden=!r.translated;if(r.translated)$("trsql").textContent=r.translated;
  if(r.error){$("meta").textContent="Error";$("out").innerHTML=`<div class="err"></div>`;$("out").firstChild.textContent=r.error;return}
  $("meta").textContent=r.columns.length?`${r.rows.length} row(s)${r.truncated?" (truncated at 1000)":""} · ${r.ms} ms`:`${r.command} · ${r.ms} ms`;
- const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
- $("out").innerHTML=r.columns.length?`<table><tr>${r.columns.map(c=>`<th>${esc(c)}</th>`).join("")}</tr>${r.rows.map(row=>"<tr>"+row.map((v,i)=>v===null?'<td class="n">NULL</td>':`<td class="${r.numeric[i]?"num":""}">${esc(v)}</td>`).join("")+"</tr>").join("")}</table>`:"";
- if(!r.columns.length)init()}
+ $("out").innerHTML=r.columns.length?`<table><tr>${r.columns.map(c=>`<th>${esc(c)}</th>`).join("")}</tr>${r.rows.map(row=>"<tr>"+row.map((v,i)=>v===null?'<td class="n">NULL</td>':`<td class="${r.numeric[i]?"num":""}">${esc(v)}</td>`).join("")+"</tr>").join("")}</table>`:""}
+async function run(){const t=$("sql"),sh=cur();let sql=t.value.substring(t.selectionStart,t.selectionEnd).trim()||t.value;syncSql();
+ const r=await post("/api/query",{dataset:sh.ds,sql,dialect:sh.dia});sh.last=r;if(cur()===sh)showResult(r);
+ if(!r.error&&!r.columns.length)init()}
 function toggle(t){const v=t.value;let a=v.lastIndexOf("\n",t.selectionStart-1)+1;let b=v.indexOf("\n",t.selectionEnd);if(b<0)b=v.length;
  const lines=v.slice(a,b).split("\n");const all=lines.every(l=>!l.trim()||/^\s*--/.test(l));
  const n=lines.map(l=>all?l.replace(/^(\s*)-- ?/,"$1"):l.trim()?"-- "+l:l).join("\n");t.setRangeText(n,a,b,"select");hl()}
@@ -127,7 +159,7 @@ function hl(){const v=$("sql").value,esc=s=>s.replace(/&/g,"&amp;").replace(/</g
  $("hl").innerHTML=v.replace(/(--[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|('(?:[^']|'')*'?)|("(?:[^"]|"")*"?)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_]\w*\b)(\s*\()?|([\s\S])/g,(m,c,s,d,n,w,p,o)=>
   c?`<span class="c">${esc(c)}</span>`:s?`<span class="s">${esc(s)}</span>`:d?`<span class="f">${esc(d)}</span>`:n?`<span class="n">${n}</span>`:
   w?(KW.has(w.toLowerCase())?`<span class="k">${w}</span>`+(p||""):p?`<span class="f">${w}</span>`+p:m):esc(m))+"\n ";
- $("hl").scrollTop=$("sql").scrollTop;$("hl").scrollLeft=$("sql").scrollLeft}
+ $("hl").scrollTop=$("sql").scrollTop;$("hl").scrollLeft=$("sql").scrollLeft;syncSql()}
 $("sql").addEventListener("input",hl);$("sql").addEventListener("scroll",()=>{$("hl").scrollTop=$("sql").scrollTop;$("hl").scrollLeft=$("sql").scrollLeft});
 (()=>{const ed=document.querySelector(".ed"),sp=$("split");
  try{const v=localStorage.getItem("edh");if(v)ed.style.height=v+"px"}catch(e){}
@@ -140,7 +172,7 @@ $("run").onclick=run;
 $("sql").onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key=="Enter"){e.preventDefault();run()}
  if((e.metaKey||e.ctrlKey)&&e.key=="/"){e.preventDefault();toggle(e.target)}
  if(e.key=="Tab"){e.preventDefault();e.target.setRangeText("  ",e.target.selectionStart,e.target.selectionEnd,"end");hl()}};
-$("reset").onclick=async()=>{await post("/api/reset",{dataset:$("ds").value});await init();$("meta").textContent="Data reset";$("out").innerHTML=""};
+$("reset").onclick=async()=>{await post("/api/reset",{dataset:$("ds").value});cur().last=null;await init();$("meta").textContent="Data reset";$("out").innerHTML=""};
 /* ================= ER diagram ================= */
 const SVGNS="http://www.w3.org/2000/svg",PAL=["#4c6ef5","#12b886","#f59f00","#e64980","#7950f2","#15aabf","#fd7e14","#40c057"],CW=250,HEAD=42,ROWH=26;
 const S=(tag,at={},par)=>{const e=document.createElementNS(SVGNS,tag);for(const k in at)e.setAttribute(k,at[k]);if(par)par.appendChild(e);return e};

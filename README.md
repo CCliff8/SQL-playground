@@ -24,11 +24,12 @@ Requires Node 18+ (and Python 3 only for Snowflake mode and the data generators)
 ## Features
 
 **Query tab**
+- **Multiple sheets:** the strip above the editor holds any number of query sheets. Each sheet keeps its own SQL, dataset, dialect and last result, so you can work on `saas` and `test_finale` side by side. `+` adds a sheet (it starts on the current dataset), double-click a name to rename it, `×` closes it. Sheets and their queries survive a page reload. The dataset dropdown, the sidebar and the Data model tab always follow the active sheet.
 - PostgreSQL SQL editor with syntax highlighting (keywords, strings, numbers, functions, green italic comments).
 - `-- line` and `/* block */` comments. `⌘/Ctrl+/` toggles comments on the current line or selection.
 - `⌘/Ctrl+Enter` runs the whole script, or only the highlighted selection. Multiple statements are supported; the last result is shown.
 - Results grid with right-aligned numbers, `NULL` highlighting, row count and timing. Output is capped at 1000 rows. Errors show Postgres' message and character position.
-- `INSERT/UPDATE/DELETE/DDL` work. **Reset data** restores the dataset from its `.sql` file.
+- `INSERT/UPDATE/DELETE/DDL` work. **Reset data** restores the dataset from its `.sql` file. Sheets that use the same dataset share the same data, so a change made in one is visible in the others.
 - Dialect switch: **PostgreSQL** or **Snowflake (translated)**. See below.
 - Resizable layout: drag the divider between editor and results, and the one between sidebar and main area (double-click resets). Sizes are remembered.
 - Sidebar lists every table and column with types and row counts. Click a column or table name to insert it into the editor.
